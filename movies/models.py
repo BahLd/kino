@@ -63,15 +63,12 @@ class Movie(models.Model):
     budget = models.PositiveIntegerField("Бюджет", default=0,
                                          help_text="указывать сумму в долларах")
     fees_in_usa = models.PositiveIntegerField(
-        "Сборы в США", default=0, help_text="указывать сумму в долларах"
-    )
+        "Сборы в США", default=0, help_text="указывать сумму в долларах")
     fess_in_world = models.PositiveIntegerField(
-        "Сборы в мире", default=0, help_text="указывать сумму в долларах"
-    )
+        "Сборы в мире", default=0, help_text="указывать сумму в долларах")
     category = models.ForeignKey(
-        Category, verbose_name="Категория", on_delete=models.SET_NULL, null=True
-    )
-    slug = models.SlugField(max_length=130, unique=True)
+        Category, verbose_name="Категория", on_delete=models.SET_NULL, null=True)
+    url = models.SlugField(max_length=130, unique=True)
     draft = models.BooleanField("Черновик", default=False)
 
     def __str__(self):
@@ -120,7 +117,7 @@ class Rating(models.Model):
     """Рейтинг"""
     ip = models.CharField("IP адрес", max_length=15)
     star = models.ForeignKey(RatingStar, on_delete=models.CASCADE, verbose_name="звезда")
-    movie = models.ForeignKey(Movie, on_delete=models.CASCADE, verbose_name="фильм", related_name="ratings")
+    movie = models.ForeignKey(Movie, on_delete=models.CASCADE, verbose_name="фильм")
 
     def __str__(self):
         return f"{self.star} - {self.movie}"
@@ -130,14 +127,14 @@ class Rating(models.Model):
         verbose_name_plural = "Рейтинги"
 
 
+
 class Reviews(models.Model):
     """Отзывы"""
     email = models.EmailField()
     name = models.CharField("Имя", max_length=100)
     text = models.TextField("Сообщение", max_length=5000)
     parent = models.ForeignKey(
-        'self', verbose_name="Родитель", on_delete=models.SET_NULL, blank=True, null=True
-    )
+        'self', verbose_name="Родитель", on_delete=models.SET_NULL, blank=True, null=True)
     movie = models.ForeignKey(Movie, verbose_name="фильм", on_delete=models.CASCADE)
 
     def __str__(self):
