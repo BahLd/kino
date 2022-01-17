@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Genre, Movie, MovieShots, Actor, Rating, RatingStar, Reviews
+from .models import Category, Genre, Movie, MovieShots, Actor, Rating, RatingStar, Review
 from django import forms
 
 from ckeditor_uploader.widgets import CKEditorUploadingWidget
@@ -22,7 +22,7 @@ class CategoryAdmin(admin.ModelAdmin):
 
 class ReviewInline(admin.TabularInline):
     """Отзывы на странице фильма"""
-    model = Reviews
+    model = Review
     extra = 1
     readonly_fields = ("name", "email")
 
@@ -61,7 +61,7 @@ class MovieAdmin(admin.ModelAdmin):
     )
 
 
-@admin.register(Reviews)
+@admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
     """Отзывы"""
     list_display = ("name", "email", "parent", "movie", "id")

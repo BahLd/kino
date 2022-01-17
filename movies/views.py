@@ -1,113 +1,52 @@
-from django.db.models import Q
-from django.http import HttpResponse
-from django.shortcuts import render, redirect
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
-from django.views.generic.base import View
+from django.db import models
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from .models import Movie, Category, Actor, Genre, Rating
-from .forms import ReviewForm, RatingForm
-
-
-class GenreYear:
-    """Жанры и года выхода фильмов"""
-    def get_genres(self):
-        return Genre.objects.all()
-
-    def get_years(self):
-        return Movie.objects.filter(draft=False).values("year")
+from .models import Movie
+from .serializers import MovieListSerializer, MovieDetailSerializer, ReviewCreateSerializer, CreateRatingSerializer
+from .service import get_client_ip
 
 
-class MovieView(GenreYear, ListView):
-    """Саписок фильмов"""
-    model = Movie
-    queryset = Movie.objects.filter(draft=False)
-    paginate_by = 1
-
-
-class MovieDetailView(GenreYear, DetailView):
-    """Полное описание фильма"""
-    model = Movie
-    slug_field = "url"
-
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["star_form"] = RatingForm()
-        return context
-
-   
-
-class AddReview(View):
-    """Отзывы"""
-    def post(self, request, pk):
-        form = ReviewForm(request.POST)
-        movie = Movie.objects.get(id=pk)
-        if form.is_valid():
-            form = form.save(commit=False)
-            if request.POST.get("parent", None):
-                form.parent_id = int(request.POST.get("parent"))
-            form.movie = movie
-            form.save()
-        return redirect(movie.get_absolute_url())
+class MovieListView(APIView):
+    """Вывод списка фильмов"""
+    def get(self, request):
+        movies = Movie.objects.filter(draft=False).annotate(
+            rating_user=models.Count("ratings", filter=models.Q(ratings__ip=get_client_ip(request)))
+        ).annotate(
+            middle_star=models.Sum(models.F('ratings__star')) / models.Count(models.F('ratings'))
+        )
+        serializer = MovieListSerializer(movies, many=True)
+        return Response(serializer.data)
 
 
 
-class ActorView(GenreYear, DetailView):
-    """Вывод информации о актере"""
-    model = Actor
-    template_name = 'movies/actor.html'
-    slug_field = "name"
+class MovieDetailView(APIView):
+    """Вывод фильма"""
+    def get(self, request, pk):
+        movie = Movie.objects.get(id=pk, draft=False)
+        serializer = MovieDetailSerializer(movie)
+        return Response(serializer.data)
 
 
-class FilterMoviesView(GenreYear, ListView):
-    """Фильтр фильмов"""
-    paginate_by = 2
-
-    def get_queryset(self):
-        queryset = Movie.objects.filter(
-            Q(year__in=self.request.GET.getlist("year")) |
-            Q(genres__in=self.request.GET.getlist("genre"))
-        ).distinct()
-        return queryset
-
-    def get_context_data(self, *args, **kwargs):
-        context = super().get_context_data(*args, **kwargs)
-        context["year"] = ''.join([f"year={x}&" for x in self.request.GET.getlist("year")])
-        context["genre"] = ''.join([f"genre={x}&" for x in self.request.GET.getlist("genre")])
-        return context
+class ReviewCreateView(APIView):
+    """Добавление отзыва к фильму"""
+    def post(self, request):
+        review = ReviewCreateSerializer(data=request.data)
+        if review.is_valid():
+            review.save()
+        return Response(status=201)
 
 
-class AddStarRating(View):
+class AddStarRatingView(APIView):
     """Добавление рейтинга фильму"""
-    def get_client_ip(self, request):
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
-        else:
-            ip = request.META.get('REMOTE_ADDR')
-        return ip
 
     def post(self, request):
-        form = RatingForm(request.POST)
-        if form.is_valid():
-            Rating.objects.update_or_create(
-                ip=self.get_client_ip(request),
-                movie_id=int(request.POST.get("movie")),
-                defaults={'star_id': int(request.POST.get("star"))}
-            )
-            return HttpResponse(status=201)
+        serializer = CreateRatingSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(ip=get_client_ip(request))
+            return Response(status=201)
         else:
-            return HttpResponse(status=400)
+            return Response(status=400)
 
 
-class Search(ListView):
-    """Поиск фильмов"""
-    paginate_by = 3
 
-    def get_queryset(self):
-        return Movie.objects.filter(title__icontains=self.request.GET.get("q"))
-
-    def get_context_data(self, *args, **kwargs):
-        context = super().get_context_data(*args, **kwargs)
-        context["q"] = f'q={self.request.GET.get("q")}&'
-        return context

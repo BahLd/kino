@@ -42,11 +42,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'ckeditor',
     'ckeditor_uploader',
-    'allauth',
-    'allauth.account',
+
     # """MY APPS"""
     'movies',
-    'contact',
 ]
 
 MIDDLEWARE = [
@@ -128,11 +126,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 1
-ACCOUNT_USERNAME_MIN_LENGTH = 4
-LOGIN_REDIRECT_URL = "/"
-
-EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
@@ -218,5 +211,3 @@ CKEDITOR_CONFIGS = {
         ]),
     }
 }
-
-SITE_ID = 1

@@ -7,6 +7,7 @@ from django.urls import reverse
 class Category(models.Model):
     """Категории"""
     name = models.CharField("Категория", max_length=150)
+    description = models.TextField("Описание")
     slug = models.SlugField(max_length=160, unique=True)
 
     def __str__(self):
@@ -38,6 +39,7 @@ class Actor(models.Model):
 class Genre(models.Model):
     """Жанры"""
     name = models.CharField("Имя", max_length=100)
+    description = models.TextField("Описание")
     slug = models.SlugField(max_length=160, unique=True)
 
     def __str__(self):
@@ -63,11 +65,14 @@ class Movie(models.Model):
     budget = models.PositiveIntegerField("Бюджет", default=0,
                                          help_text="указывать сумму в долларах")
     fees_in_usa = models.PositiveIntegerField(
-        "Сборы в США", default=0, help_text="указывать сумму в долларах")
+        "Сборы в США", default=0, help_text="указывать сумму в долларах"
+    )
     fess_in_world = models.PositiveIntegerField(
-        "Сборы в мире", default=0, help_text="указывать сумму в долларах")
+        "Сборы в мире", default=0, help_text="указывать сумму в долларах"
+    )
     category = models.ForeignKey(
-        Category, verbose_name="Категория", on_delete=models.SET_NULL, null=True)
+        Category, verbose_name="Категория", on_delete=models.SET_NULL, null=True
+    )
     url = models.SlugField(max_length=130, unique=True)
     draft = models.BooleanField("Черновик", default=False)
 
@@ -117,7 +122,12 @@ class Rating(models.Model):
     """Рейтинг"""
     ip = models.CharField("IP адрес", max_length=15)
     star = models.ForeignKey(RatingStar, on_delete=models.CASCADE, verbose_name="звезда")
-    movie = models.ForeignKey(Movie, on_delete=models.CASCADE, verbose_name="фильм")
+    movie = models.ForeignKey(
+        Movie,
+        on_delete=models.CASCADE,
+        verbose_name="фильм",
+        related_name="ratings"
+    )
 
     def __str__(self):
         return f"{self.star} - {self.movie}"
@@ -127,15 +137,15 @@ class Rating(models.Model):
         verbose_name_plural = "Рейтинги"
 
 
-
-class Reviews(models.Model):
+class Review(models.Model):
     """Отзывы"""
     email = models.EmailField()
     name = models.CharField("Имя", max_length=100)
     text = models.TextField("Сообщение", max_length=5000)
     parent = models.ForeignKey(
-        'self', verbose_name="Родитель", on_delete=models.SET_NULL, blank=True, null=True)
-    movie = models.ForeignKey(Movie, verbose_name="фильм", on_delete=models.CASCADE)
+        'self', verbose_name="Родитель", on_delete=models.SET_NULL, blank=True, null=True, related_name="children"
+    )
+    movie = models.ForeignKey(Movie, verbose_name="фильм", on_delete=models.CASCADE, related_name="reviews")
 
     def __str__(self):
         return f"{self.name} - {self.movie}"
