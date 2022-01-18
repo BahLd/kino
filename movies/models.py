@@ -1,13 +1,11 @@
 from django.db import models
 from datetime import date
-
 from django.urls import reverse
 
 
 class Category(models.Model):
     """Категории"""
     name = models.CharField("Категория", max_length=150)
-    description = models.TextField("Описание")
     slug = models.SlugField(max_length=160, unique=True)
 
     def __str__(self):
@@ -39,7 +37,6 @@ class Actor(models.Model):
 class Genre(models.Model):
     """Жанры"""
     name = models.CharField("Имя", max_length=100)
-    description = models.TextField("Описание")
     slug = models.SlugField(max_length=160, unique=True)
 
     def __str__(self):
